@@ -1,19 +1,14 @@
-# AdaptUI - Generative UI Framework
+# AdaptUI – AI-Powered Generative UI
 
-A premium, interactive chat interface powered by **Tambo AI**, built with React and Vite. This project demonstrates the power of Generative UI, where the interface adapts in real-time based on your natural language input.
+AdaptUI demonstrates a generative UI using React and Tambo AI. A user types a prompt, and the AI selects the best component to render based on their intent.
 
-## ✨ Features
+## Current Features
+- **Dynamic UI Switching**: Real-time component selection based on user input.
+- **Learning Mode**: Displays a curriculum syllabus and tracks mastery progress.
+- **Interview Mode**: Provides strategic preparation tips and a checklist.
+- **Project Ideas**: Suggests project blueprints with descriptions and tech stacks.
 
-- **Generative UI Engine**: Automatically renders specialized components (Learning, Interview, Project modes) based on intent.
-- **Dynamic Adaptive Layout**: Switches between a focused chat view and a split-screen preview panel seamlessly.
-- **Premium Design System**: Dark-themed, glassmorphic UI with smooth animations and mesh gradients.
-- **Contextual Search**: The search bar follows the conversation flow for a natural interaction.
-- **Interactive Actions**:
-  - **Paired Deletion**: Removing a response also removes the triggering question.
-  - **Copy to Clipboard**: Quick access to AI text responses.
-  - **Message Reactions**: Like your favorite AI responses.
-
-## 🚀 Getting Started
+## Getting Started
 
 1. **Clone the repository**:
    ```bash
@@ -38,12 +33,8 @@ A premium, interactive chat interface powered by **Tambo AI**, built with React 
    ```
 
 ## 🛠️ Tech Stack
-
-- **Framework**: React 19
-- **Build Tool**: Vite
-- **AI Library**: [@tambo-ai/react](https://tambo.ai)
-- **Styling**: Vanilla CSS with modern Design Tokens
+- React / Vite
+- Tambo AI React SDK
 
 ## 📄 License
-
 MIT
