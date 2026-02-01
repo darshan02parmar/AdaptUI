@@ -154,7 +154,7 @@ function App() {
         <header>
           <div className="header-content">
             <div className="logo">
-              <h1>Tambo UI</h1>
+              <h1>AdaptUI</h1>
               <p className="subtitle">Dynamic Generative UI • React</p>
             </div>
             {hasMessages && (
