@@ -108,6 +108,53 @@ h1 {
   line-height: 1.6;
 }
 
+.hero-checklist {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 24px;
+  margin-top: 24px;
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+.hero-checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hero-checklist-item::before {
+  content: '✓';
+  color: var(--accent);
+  font-weight: 900;
+}
+
+.hero-stats {
+  margin-top: 40px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.hero-stat {
+  text-align: center;
+}
+
+.hero-stat-value {
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.hero-stat-label {
+  margin-top: 6px;
+  color: var(--text-secondary);
+}
+
 .features-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -212,6 +259,11 @@ h1 {
 
   .landing-page {
     gap: 60px;
+  }
+
+  .hero-stats {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 }
 
@@ -519,18 +571,10 @@ h2+p {
   border-color: #ef4444;
 }
 
-.hero-section {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  min-height: 15vh;
-  /* Reduced from 40vh */
-}
-
 .input-section.central {
   max-width: 700px;
-  transform: translateY(-20px);
+  width: 100%;
+  margin: 32px auto 0;
 }
 
 .bottom-input-container {

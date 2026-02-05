@@ -166,27 +166,9 @@ function App() {
           </div>
         </header>
 
-        {!hasMessages && (
-          <div className="hero-section">
-            <form className="input-section central" onSubmit={handleSubmit}>
-              <input
-                type="text"
-                className="search-input"
-                placeholder="Type what you want to do..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                disabled={isGenerating}
-              />
-              <button type="submit" className="generate-btn" disabled={isGenerating}>
-                {isGenerating ? 'Thinking...' : 'Send'}
-              </button>
-            </form>
-          </div>
-        )}
-
         <div className={`content-layout ${lastComponentMessage ? 'split-view' : 'centered-view'}`}>
           <div className="conversation-history">
-            {!hasMessages && !isGenerating && (
+            {!hasMessages && (
               <div className="landing-page">
                 <section className="hero-section-v2">
                   <div className="badge">Tambo AI v1.0</div>
@@ -195,23 +177,40 @@ function App() {
                     Our generative engine transforms your natural language into
                     dynamic, interactive UI components in real-time.
                   </p>
-                </section>
 
-                <section className="features-grid">
-                  <div className="feature-card">
-                    <div className="icon">🧠</div>
-                    <h3>Intent Recognition</h3>
-                    <p>AI understands your goals and chooses the perfect UI to help you achieve them.</p>
-                  </div>
-                  <div className="feature-card">
-                    <div className="icon">⚡</div>
-                    <h3>Instant Feedback</h3>
-                    <p>No more static forms. Get exactly what you need, when you need it.</p>
-                  </div>
-                  <div className="feature-card">
-                    <div className="icon">🎨</div>
-                    <h3>Dynamic Themes</h3>
-                    <p>Beautiful, accessible components styled specifically for your data.</p>
+                  <form className="input-section central" onSubmit={handleSubmit}>
+                    <input
+                      type="text"
+                      className="search-input"
+                      placeholder="Type what you want to do..."
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      disabled={isGenerating}
+                    />
+                    <button type="submit" className="generate-btn" disabled={isGenerating}>
+                      {isGenerating ? 'Thinking...' : 'Send'}
+                    </button>
+                  </form>
+
+                  <ul className="hero-checklist" aria-label="Key benefits">
+                    <li className="hero-checklist-item">No credit card required</li>
+                    <li className="hero-checklist-item">Free 14-day trial</li>
+                    <li className="hero-checklist-item">Cancel anytime</li>
+                  </ul>
+
+                  <div className="hero-stats" aria-label="Social proof">
+                    <div className="hero-stat">
+                      <div className="hero-stat-value">10K+</div>
+                      <div className="hero-stat-label">Active Users</div>
+                    </div>
+                    <div className="hero-stat">
+                      <div className="hero-stat-value">99.9%</div>
+                      <div className="hero-stat-label">Uptime</div>
+                    </div>
+                    <div className="hero-stat">
+                      <div className="hero-stat-value">24/7</div>
+                      <div className="hero-stat-label">Support</div>
+                    </div>
                   </div>
                 </section>
 
@@ -255,7 +254,7 @@ function App() {
                   <div className="message-bubble">
                     <div className="message-content">
                       {Array.isArray(message.content)
-                        ? message.content.map((part, pIndex) => part.type === 'text' ? formatMessage(part.text) : null)
+                        ? message.content.map((part) => part.type === 'text' ? formatMessage(part.text) : null)
                         : formatMessage(message.content)}
                     </div>
                     {message.role === 'assistant' && (
