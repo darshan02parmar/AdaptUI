@@ -3,6 +3,7 @@ import { useTambo, TamboRegistryProvider } from '@tambo-ai/react';
 import LearningMode from './components/LearningMode';
 import InterviewMode from './components/InterviewMode';
 import ProjectMode from './components/ProjectMode';
+import Hero3 from './components/Hero3';
 
 const components = [
   {
@@ -59,26 +60,66 @@ const components = [
   }
 ];
 
+// `text` is expected to be a plain string from the model.
+// We intentionally support only `**bold**` and do not interpret HTML.
+const renderBoldText = (text, keyPrefix) => {
+  const parts = [];
+  const boldRegex = /\*\*(.*?)\*\*/g;
+
+  let lastIndex = 0;
+  let match;
+
+  while ((match = boldRegex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+
+    parts.push(
+      <strong key={`${keyPrefix}-b-${parts.length}`}>{match[1]}</strong>
+    );
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts;
+};
+
 // Simple helper to format AI text with basic markdown-like syntax
 const formatMessage = (text) => {
   if (typeof text !== 'string') return text;
 
-  return text.split('\n').map((line, i) => {
-    // Bold: **text**
-    let formattedLine = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  return (
+    <>
+      {text.split('\n').map((line, i) => {
+        const trimmed = line.trim();
 
-    // Unordered List items: - or * or 1.
-    if (formattedLine.trim().startsWith('- ') || formattedLine.trim().startsWith('* ') || /^\d+\.\s/.test(formattedLine.trim())) {
-      return (
-        <div key={i} className="list-item" dangerouslySetInnerHTML={{ __html: formattedLine.replace(/^[-*\d.]+\s/, '• ') }} />
-      );
-    }
+        if (!trimmed) {
+          return <br key={i} />;
+        }
 
-    return formattedLine.trim() ? <p key={i} dangerouslySetInnerHTML={{ __html: formattedLine }} /> : <br key={i} />;
-  });
+        // Unordered List items: - or * or 1.
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* ') || /^\d+\.\s/.test(trimmed)) {
+          const itemText = trimmed.replace(/^(-|\*|\d+\.)\s+/, '');
+
+          return (
+            <div key={i} className="list-item">
+              <span>•</span>
+              <span>{renderBoldText(itemText, `li-${i}`)}</span>
+            </div>
+          );
+        }
+
+        return <p key={i}>{renderBoldText(line, `p-${i}`)}</p>;
+      })}
+    </>
+  );
 };
 
 function App() {
+  const [showDemo, setShowDemo] = useState(false);
   const [input, setInput] = useState('');
   const [likedMessages, setLikedMessages] = useState(new Set());
   const { sendThreadMessage, currentThread, generationStage, startNewThread, setThreadMap } = useTambo();
@@ -150,187 +191,193 @@ function App() {
 
   return (
     <TamboRegistryProvider components={components}>
-      <div className={`app-container ${hasMessages ? 'chat-active' : 'chat-idle'}`}>
-        <header>
-          <div className="header-content">
-            <div className="logo">
-              <h1>AdaptUI</h1>
-              <p className="subtitle">Dynamic Generative UI • React</p>
-            </div>
-            {hasMessages && (
-              <button className="clear-chat-btn" onClick={startNewThread}>
-                <span className="icon">🗑️</span>
-                Clear Chat
-              </button>
-            )}
-          </div>
-        </header>
-
-        {!hasMessages && (
-          <div className="hero-section">
-            <form className="input-section central" onSubmit={handleSubmit}>
-              <input
-                type="text"
-                className="search-input"
-                placeholder="Type what you want to do..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                disabled={isGenerating}
-              />
-              <button type="submit" className="generate-btn" disabled={isGenerating}>
-                {isGenerating ? 'Thinking...' : 'Send'}
-              </button>
-            </form>
-          </div>
-        )}
-
-        <div className={`content-layout ${lastComponentMessage ? 'split-view' : 'centered-view'}`}>
-          <div className="conversation-history">
-            {!hasMessages && !isGenerating && (
-              <div className="landing-page">
-                <section className="hero-section-v2">
-                  <div className="badge">Tambo AI v1.0</div>
-                  <h2 className="hero-title">Interface at the speed of thought.</h2>
-                  <p className="hero-subtitle">
-                    Our generative engine transforms your natural language into
-                    dynamic, interactive UI components in real-time.
-                  </p>
-                </section>
-
-                <section className="features-grid">
-                  <div className="feature-card">
-                    <div className="icon">🧠</div>
-                    <h3>Intent Recognition</h3>
-                    <p>AI understands your goals and chooses the perfect UI to help you achieve them.</p>
-                  </div>
-                  <div className="feature-card">
-                    <div className="icon">⚡</div>
-                    <h3>Instant Feedback</h3>
-                    <p>No more static forms. Get exactly what you need, when you need it.</p>
-                  </div>
-                  <div className="feature-card">
-                    <div className="icon">🎨</div>
-                    <h3>Dynamic Themes</h3>
-                    <p>Beautiful, accessible components styled specifically for your data.</p>
-                  </div>
-                </section>
-
-                <div className="suggestion-section">
-                  <h3 className="section-label">Start with an example</h3>
-                  <div className="suggestion-grid-v2">
-                    <button className="suggestion-tile" onClick={() => sendThreadMessage("I'm starting to learn Go")}>
-                      <div className="tile-icon">🎓</div>
-                      <div className="tile-text">
-                        <strong>Learn a language</strong>
-                        <p>Generate a syllabus and track progress</p>
-                      </div>
-                    </button>
-                    <button className="suggestion-tile" onClick={() => sendThreadMessage("Prepare me for a frontend interview")}>
-                      <div className="tile-icon">🚀</div>
-                      <div className="tile-text">
-                        <strong>Interview Ready</strong>
-                        <p>Tips, checklist, and career prep</p>
-                      </div>
-                    </button>
-                    <button className="suggestion-tile" onClick={() => sendThreadMessage("Give me some React project ideas")}>
-                      <div className="tile-icon">🛠️</div>
-                      <div className="tile-text">
-                        <strong>Project Blueprint</strong>
-                        <p>Tech stacks and project inspiration</p>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
-                <footer className="landing-footer">
-                  <p>Built with Tambo AI React SDK • Generative UI Framework</p>
-                </footer>
+      {!showDemo ? (
+        <Hero3 onViewDemo={() => setShowDemo(true)} />
+      ) : (
+        <div className={`app-container ${hasMessages ? 'chat-active' : 'chat-idle'}`}>
+          <header>
+            <div className="header-content">
+              <div className="logo">
+                <h1>AdaptUI</h1>
+                <p className="subtitle">Dynamic Generative UI • React</p>
               </div>
-            )}
-
-            <div className="messages-container">
-              {messages.map((message, index) => (
-                <div key={message.id || index} className={`message-wrapper ${message.role}`}>
-                  <div className="role-label">{message.role === 'user' ? 'You' : 'Tambo AI'}</div>
-                  <div className="message-bubble">
-                    <div className="message-content">
-                      {Array.isArray(message.content)
-                        ? message.content.map((part, pIndex) => part.type === 'text' ? formatMessage(part.text) : null)
-                        : formatMessage(message.content)}
-                    </div>
-                    {message.role === 'assistant' && (
-                      <div className="message-actions">
-                        <button
-                          className={`action-btn like-btn ${likedMessages.has(message.id) ? 'liked' : ''}`}
-                          onClick={() => toggleLike(message.id)}
-                          title="Like response"
-                        >
-                          {likedMessages.has(message.id) ? '❤️' : '🤍'}
-                        </button>
-                        <button
-                          className="action-btn copy-btn"
-                          onClick={() => copyToClipboard(message.content)}
-                          title="Copy response"
-                        >
-                          📋
-                        </button>
-                        <button
-                          className="action-btn delete-msg-btn"
-                          onClick={() => deleteMessage(message.id)}
-                          title="Delete response"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-
-              {isGenerating && (
-                <div className="message-wrapper assistant">
-                  <div className="role-label">Tambo AI</div>
-                  <div className="message-bubble assistant">
-                    <div className="typing-indicator">
-                      <span></span><span></span><span></span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {hasMessages && (
-                <div className="inline-input-container">
-                  <form className="input-section inline" onSubmit={handleSubmit}>
-                    <input
-                      type="text"
-                      className="search-input"
-                      placeholder="Ask a follow-up..."
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      disabled={isGenerating}
-                    />
-                    <button type="submit" className="generate-btn" disabled={isGenerating}>
-                      {isGenerating ? '...' : 'Send'}
-                    </button>
-                  </form>
+                <button className="clear-chat-btn" onClick={startNewThread}>
+                  <span className="icon">🗑️</span>
+                  Clear Chat
+                </button>
+              )}
+            </div>
+          </header>
+
+          {!hasMessages && (
+            <div className="hero-section">
+              <form className="input-section central" onSubmit={handleSubmit}>
+                <input
+                  type="text"
+                  className="search-input"
+                  placeholder="Type what you want to do..."
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  disabled={isGenerating}
+                />
+                <button type="submit" className="generate-btn" disabled={isGenerating}>
+                  {isGenerating ? 'Thinking...' : 'Send'}
+                </button>
+              </form>
+            </div>
+          )}
+
+          <div className={`content-layout ${lastComponentMessage ? 'split-view' : 'centered-view'}`}>
+            <div className="conversation-history">
+              {!hasMessages && !isGenerating && (
+                <div className="landing-page">
+                  <section className="hero-section-v2">
+                    <div className="badge">Tambo AI v1.0</div>
+                    <h2 className="hero-title">Interface at the speed of thought.</h2>
+                    <p className="hero-subtitle">
+                      Our generative engine transforms your natural language into dynamic,
+                      interactive UI components in real-time.
+                    </p>
+                  </section>
+
+                  <section className="features-grid">
+                    <div className="feature-card">
+                      <div className="icon">🧠</div>
+                      <h3>Intent Recognition</h3>
+                      <p>AI understands your goals and chooses the perfect UI to help you achieve them.</p>
+                    </div>
+                    <div className="feature-card">
+                      <div className="icon">⚡</div>
+                      <h3>Instant Feedback</h3>
+                      <p>No more static forms. Get exactly what you need, when you need it.</p>
+                    </div>
+                    <div className="feature-card">
+                      <div className="icon">🎨</div>
+                      <h3>Dynamic Themes</h3>
+                      <p>Beautiful, accessible components styled specifically for your data.</p>
+                    </div>
+                  </section>
+
+                  <div className="suggestion-section">
+                    <h3 className="section-label">Start with an example</h3>
+                    <div className="suggestion-grid-v2">
+                      <button className="suggestion-tile" onClick={() => sendThreadMessage("I'm starting to learn Go")}>
+                        <div className="tile-icon">🎓</div>
+                        <div className="tile-text">
+                          <strong>Learn a language</strong>
+                          <p>Generate a syllabus and track progress</p>
+                        </div>
+                      </button>
+                      <button className="suggestion-tile" onClick={() => sendThreadMessage("Prepare me for a frontend interview")}>
+                        <div className="tile-icon">🚀</div>
+                        <div className="tile-text">
+                          <strong>Interview Ready</strong>
+                          <p>Tips, checklist, and career prep</p>
+                        </div>
+                      </button>
+                      <button className="suggestion-tile" onClick={() => sendThreadMessage("Give me some React project ideas")}>
+                        <div className="tile-icon">🛠️</div>
+                        <div className="tile-text">
+                          <strong>Project Blueprint</strong>
+                          <p>Tech stacks and project inspiration</p>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  <footer className="landing-footer">
+                    <p>Built with Tambo AI React SDK • Generative UI Framework</p>
+                  </footer>
+                </div>
+              )}
+
+              <div className="messages-container">
+                {messages.map((message, index) => (
+                  <div key={message.id || index} className={`message-wrapper ${message.role}`}>
+                    <div className="role-label">{message.role === 'user' ? 'You' : 'Tambo AI'}</div>
+                    <div className="message-bubble">
+                      <div className="message-content">
+                        {Array.isArray(message.content)
+                          ? message.content.map((part, pIndex) => part.type === 'text' ? (
+                            <React.Fragment key={pIndex}>{formatMessage(part.text)}</React.Fragment>
+                          ) : null)
+                          : formatMessage(message.content)}
+                      </div>
+                      {message.role === 'assistant' && (
+                        <div className="message-actions">
+                          <button
+                            className={`action-btn like-btn ${likedMessages.has(message.id) ? 'liked' : ''}`}
+                            onClick={() => toggleLike(message.id)}
+                            title="Like response"
+                          >
+                            {likedMessages.has(message.id) ? '❤️' : '🤍'}
+                          </button>
+                          <button
+                            className="action-btn copy-btn"
+                            onClick={() => copyToClipboard(message.content)}
+                            title="Copy response"
+                          >
+                            📋
+                          </button>
+                          <button
+                            className="action-btn delete-msg-btn"
+                            onClick={() => deleteMessage(message.id)}
+                            title="Delete response"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {isGenerating && (
+                  <div className="message-wrapper assistant">
+                    <div className="role-label">Tambo AI</div>
+                    <div className="message-bubble assistant">
+                      <div className="typing-indicator">
+                        <span></span><span></span><span></span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {hasMessages && (
+                  <div className="inline-input-container">
+                    <form className="input-section inline" onSubmit={handleSubmit}>
+                      <input
+                        type="text"
+                        className="search-input"
+                        placeholder="Ask a follow-up..."
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        disabled={isGenerating}
+                      />
+                      <button type="submit" className="generate-btn" disabled={isGenerating}>
+                        {isGenerating ? '...' : 'Send'}
+                      </button>
+                    </form>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="preview-panel">
+              {lastComponentMessage && (
+                <div className="sticky-component">
+                  <div className="component-header">
+                    <span className="status-dot"></span>
+                    <span className="label">Live UI Result</span>
+                  </div>
+                  {lastComponentMessage.renderedComponent}
                 </div>
               )}
             </div>
-          </div>
-
-          <div className="preview-panel">
-            {lastComponentMessage && (
-              <div className="sticky-component">
-                <div className="component-header">
-                  <span className="status-dot"></span>
-                  <span className="label">Live UI Result</span>
-                </div>
-                {lastComponentMessage.renderedComponent}
-              </div>
-            )}
           </div>
         </div>
-      </div>
+      )}
     </TamboRegistryProvider>
   );
 }
