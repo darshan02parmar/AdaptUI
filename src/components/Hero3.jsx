@@ -36,7 +36,8 @@ const CheckIcon = ({ className }) => (
 
 const noop = () => {};
 
-const Hero3 = ({ onViewDemo = noop } = {}) => {
+const Hero3 = (props = {}) => {
+  const { onViewDemo = noop } = props;
   const features = ["No credit card required", "Free 14-day trial", "Cancel anytime"];
 
   return (

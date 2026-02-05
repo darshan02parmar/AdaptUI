@@ -60,30 +60,55 @@ const components = [
   }
 ];
 
-const escapeHtml = (text) =>
-  text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+const renderBoldText = (text, keyPrefix) => {
+  const parts = [];
+  const boldRegex = /\*\*(.*?)\*\*/g;
+
+  let lastIndex = 0;
+  let match;
+
+  while ((match = boldRegex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+
+    parts.push(
+      <strong key={`${keyPrefix}-b-${parts.length}`}>{match[1]}</strong>
+    );
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts;
+};
 
 // Simple helper to format AI text with basic markdown-like syntax
 const formatMessage = (text) => {
   if (typeof text !== 'string') return text;
 
   return text.split('\n').map((line, i) => {
-    // Bold: **text**
-    let formattedLine = escapeHtml(line).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      return <br key={i} />;
+    }
 
     // Unordered List items: - or * or 1.
-    if (formattedLine.trim().startsWith('- ') || formattedLine.trim().startsWith('* ') || /^\d+\.\s/.test(formattedLine.trim())) {
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ') || /^\d+\.\s/.test(trimmed)) {
+      const itemText = trimmed.replace(/^(-|\*|\d+\.)\s+/, '');
+
       return (
-        <div key={i} className="list-item" dangerouslySetInnerHTML={{ __html: formattedLine.replace(/^[-*\d.]+\s/, '• ') }} />
+        <div key={i} className="list-item">
+          <span>•</span>
+          <span>{renderBoldText(itemText, `li-${i}`)}</span>
+        </div>
       );
     }
 
-    return formattedLine.trim() ? <p key={i} dangerouslySetInnerHTML={{ __html: formattedLine }} /> : <br key={i} />;
+    return <p key={i}>{renderBoldText(line, `p-${i}`)}</p>;
   });
 };
 
