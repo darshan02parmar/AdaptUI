@@ -3,6 +3,7 @@ import { useTambo, TamboRegistryProvider } from '@tambo-ai/react';
 import LearningMode from './components/LearningMode';
 import InterviewMode from './components/InterviewMode';
 import ProjectMode from './components/ProjectMode';
+import Hero3 from './components/Hero3';
 
 const components = [
   {
@@ -79,6 +80,7 @@ const formatMessage = (text) => {
 };
 
 function App() {
+  const [showDemo, setShowDemo] = useState(false);
   const [input, setInput] = useState('');
   const [likedMessages, setLikedMessages] = useState(new Set());
   const { sendThreadMessage, currentThread, generationStage, startNewThread, setThreadMap } = useTambo();
@@ -147,6 +149,10 @@ function App() {
   };
 
   const isGenerating = generationStage !== 'IDLE' && generationStage !== 'COMPLETE';
+
+  if (!showDemo) {
+    return <Hero3 onViewDemo={() => setShowDemo(true)} />;
+  }
 
   return (
     <TamboRegistryProvider components={components}>
@@ -255,7 +261,7 @@ function App() {
                   <div className="message-bubble">
                     <div className="message-content">
                       {Array.isArray(message.content)
-                        ? message.content.map((part, pIndex) => part.type === 'text' ? formatMessage(part.text) : null)
+                        ? message.content.map((part) => part.type === 'text' ? formatMessage(part.text) : null)
                         : formatMessage(message.content)}
                     </div>
                     {message.role === 'assistant' && (
