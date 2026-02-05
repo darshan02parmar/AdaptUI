@@ -60,13 +60,21 @@ const components = [
   }
 ];
 
+const escapeHtml = (text) =>
+  text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+
 // Simple helper to format AI text with basic markdown-like syntax
 const formatMessage = (text) => {
   if (typeof text !== 'string') return text;
 
   return text.split('\n').map((line, i) => {
     // Bold: **text**
-    let formattedLine = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    let formattedLine = escapeHtml(line).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
     // Unordered List items: - or * or 1.
     if (formattedLine.trim().startsWith('- ') || formattedLine.trim().startsWith('* ') || /^\d+\.\s/.test(formattedLine.trim())) {
