@@ -60,6 +60,8 @@ const components = [
   }
 ];
 
+// `text` is expected to be a plain string from the model.
+// We intentionally support only `**bold**` and do not interpret HTML.
 const renderBoldText = (text, keyPrefix) => {
   const parts = [];
   const boldRegex = /\*\*(.*?)\*\*/g;
@@ -293,7 +295,9 @@ function App() {
                     <div className="message-bubble">
                       <div className="message-content">
                         {Array.isArray(message.content)
-                          ? message.content.map((part) => part.type === 'text' ? formatMessage(part.text) : null)
+                          ? message.content.map((part, pIndex) => part.type === 'text' ? (
+                            <React.Fragment key={pIndex}>{formatMessage(part.text)}</React.Fragment>
+                          ) : null)
                           : formatMessage(message.content)}
                       </div>
                       {message.role === 'assistant' && (
