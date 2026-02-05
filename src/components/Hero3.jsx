@@ -1,4 +1,3 @@
-"use client";
 import React from "react";
 
 const ArrowRightIcon = ({ className }) => (
@@ -35,7 +34,7 @@ const CheckIcon = ({ className }) => (
   </svg>
 );
 
-const Hero3 = ({ onViewDemo = () => {} } = {}) => {
+const Hero3 = ({ onViewDemo } = {}) => {
   const features = ["No credit card required", "Free 14-day trial", "Cancel anytime"];
 
   return (
@@ -43,7 +42,7 @@ const Hero3 = ({ onViewDemo = () => {} } = {}) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <header className="py-6">
           <nav className="flex items-center justify-between">
-            <div className="text-2xl font-bold text-black dark:text-white">Brand</div>
+            <div className="text-2xl font-bold text-black dark:text-white">AdaptUI</div>
             <div className="hidden md:flex items-center space-x-8">
               <a
                 href="#"
@@ -102,6 +101,7 @@ const Hero3 = ({ onViewDemo = () => {} } = {}) => {
               <button
                 type="button"
                 className="bg-black dark:bg-white text-white dark:text-black px-8 py-4 rounded-md font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+                onClick={onViewDemo}
               >
                 Get Started Free
                 <ArrowRightIcon className="h-5 w-5" />
