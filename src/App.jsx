@@ -91,27 +91,31 @@ const renderBoldText = (text, keyPrefix) => {
 const formatMessage = (text) => {
   if (typeof text !== 'string') return text;
 
-  return text.split('\n').map((line, i) => {
-    const trimmed = line.trim();
+  return (
+    <>
+      {text.split('\n').map((line, i) => {
+        const trimmed = line.trim();
 
-    if (!trimmed) {
-      return <br key={i} />;
-    }
+        if (!trimmed) {
+          return <br key={i} />;
+        }
 
-    // Unordered List items: - or * or 1.
-    if (trimmed.startsWith('- ') || trimmed.startsWith('* ') || /^\d+\.\s/.test(trimmed)) {
-      const itemText = trimmed.replace(/^(-|\*|\d+\.)\s+/, '');
+        // Unordered List items: - or * or 1.
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* ') || /^\d+\.\s/.test(trimmed)) {
+          const itemText = trimmed.replace(/^(-|\*|\d+\.)\s+/, '');
 
-      return (
-        <div key={i} className="list-item">
-          <span>•</span>
-          <span>{renderBoldText(itemText, `li-${i}`)}</span>
-        </div>
-      );
-    }
+          return (
+            <div key={i} className="list-item">
+              <span>•</span>
+              <span>{renderBoldText(itemText, `li-${i}`)}</span>
+            </div>
+          );
+        }
 
-    return <p key={i}>{renderBoldText(line, `p-${i}`)}</p>;
-  });
+        return <p key={i}>{renderBoldText(line, `p-${i}`)}</p>;
+      })}
+    </>
+  );
 };
 
 function App() {
