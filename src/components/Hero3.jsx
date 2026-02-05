@@ -35,7 +35,7 @@ const CheckIcon = ({ className }) => (
   </svg>
 );
 
-const Hero3 = ({ onViewDemo } = {}) => {
+const Hero3 = ({ onViewDemo = () => {} } = {}) => {
   const features = ["No credit card required", "Free 14-day trial", "Cancel anytime"];
 
   return (
