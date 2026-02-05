@@ -59,23 +59,75 @@ const components = [
   }
 ];
 
+// `text` is expected to be a plain string from the model.
+// We intentionally support only `**bold**` and do not interpret HTML.
+const renderBoldText = (text, keyPrefix) => {
+  if (typeof text !== 'string') return text;
+
+  const parts = [];
+  let lastIndex = 0;
+
+  for (const match of text.matchAll(/\*\*(.+?)\*\*/g)) {
+    if (match.index == null) continue;
+
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+
+    parts.push(
+      <strong key={`${keyPrefix}-b-${parts.length}`}>{match[1]}</strong>
+    );
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts;
+};
+
 // Simple helper to format AI text with basic markdown-like syntax
 const formatMessage = (text) => {
   if (typeof text !== 'string') return text;
 
-  return text.split('\n').map((line, i) => {
-    // Bold: **text**
-    let formattedLine = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  return (
+    <>
+      {text.split('\n').map((line, i) => {
+        const trimmed = line.trim();
 
-    // Unordered List items: - or * or 1.
-    if (formattedLine.trim().startsWith('- ') || formattedLine.trim().startsWith('* ') || /^\d+\.\s/.test(formattedLine.trim())) {
-      return (
-        <div key={i} className="list-item" dangerouslySetInnerHTML={{ __html: formattedLine.replace(/^[-*\d.]+\s/, '• ') }} />
-      );
-    }
+        if (!trimmed) {
+          return <br key={i} />;
+        }
 
-    return formattedLine.trim() ? <p key={i} dangerouslySetInnerHTML={{ __html: formattedLine }} /> : <br key={i} />;
-  });
+        const orderedMatch = trimmed.match(/^(\d+)\.\s+/);
+        if (orderedMatch) {
+          const itemText = trimmed.replace(/^\d+\.\s+/, '');
+
+          return (
+            <div key={i} className="list-item">
+              <span>{orderedMatch[1]}.</span>
+              <span>{renderBoldText(itemText, `oli-${i}`)}</span>
+            </div>
+          );
+        }
+
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+          const itemText = trimmed.replace(/^(-|\*)\s+/, '');
+
+          return (
+            <div key={i} className="list-item">
+              <span>•</span>
+              <span>{renderBoldText(itemText, `uli-${i}`)}</span>
+            </div>
+          );
+        }
+
+        return <p key={i}>{renderBoldText(line, `p-${i}`)}</p>;
+      })}
+    </>
+  );
 };
 
 function App() {
@@ -254,7 +306,9 @@ function App() {
                   <div className="message-bubble">
                     <div className="message-content">
                       {Array.isArray(message.content)
-                        ? message.content.map((part) => part.type === 'text' ? formatMessage(part.text) : null)
+                        ? message.content.map((part, pIndex) => part.type === 'text'
+                          ? <React.Fragment key={pIndex}>{formatMessage(part.text)}</React.Fragment>
+                          : null)
                         : formatMessage(message.content)}
                     </div>
                     {message.role === 'assistant' && (
