@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTambo, TamboRegistryProvider } from '@tambo-ai/react';
 import LearningMode from './components/LearningMode';
 import InterviewMode from './components/InterviewMode';
@@ -57,6 +57,12 @@ const components = [
       }
     }
   }
+];
+
+const EXAMPLE_PROMPTS = [
+  'Help me prepare for interviews',
+  'Suggest a project idea',
+  'Create a learning plan'
 ];
 
 // `text` is expected to be a plain string from the model.
@@ -130,6 +136,15 @@ const formatMessage = (text) => {
   );
 };
 
+const API_ERROR_MESSAGE = 'Something went wrong. Please try again.';
+
+const GENERATING_STAGES = new Set([
+  'CHOOSING_COMPONENT',
+  'FETCHING_CONTEXT',
+  'HYDRATING_COMPONENT',
+  'STREAMING_RESPONSE'
+]);
+
 function GenerationStatus({ isActive }) {
   if (!isActive) return null;
 
@@ -144,7 +159,12 @@ function App() {
   const [input, setInput] = useState('');
   const [likedMessages, setLikedMessages] = useState(new Set());
   const [isPendingGenerationStart, setIsPendingGenerationStart] = useState(false);
+  const [apiError, setApiError] = useState(null);
   const { sendThreadMessage, currentThread, generationStage, startNewThread, setThreadMap } = useTambo();
+
+  const isGenerating = GENERATING_STAGES.has(generationStage);
+  const showGeneratingStatus = isGenerating || isPendingGenerationStart;
+  const isInputDisabled = showGeneratingStatus;
 
   // Get all messages
   const messages = currentThread?.messages || [];
@@ -154,35 +174,56 @@ function App() {
   const lastComponentMessage = [...messages]
     .reverse()
     .find(m => m.renderedComponent);
-
-  const isGenerating = generationStage !== 'IDLE' && generationStage !== 'COMPLETE';
-  const showGeneratingStatus = isGenerating || isPendingGenerationStart;
-  const isInputDisabled = showGeneratingStatus;
-
   useEffect(() => {
     if (!isPendingGenerationStart) return;
 
-    const timeoutId = setTimeout(
-      () => setIsPendingGenerationStart(false),
-      generationStage !== 'IDLE' ? 0 : 15000
-    );
+    if (generationStage !== 'IDLE') {
+      setIsPendingGenerationStart(false);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => setIsPendingGenerationStart(false), 15000);
     return () => clearTimeout(timeoutId);
   }, [generationStage, isPendingGenerationStart]);
 
-  const sendMessage = (text) => {
+  const safeSendThreadMessage = useCallback(async (message) => {
     if (isInputDisabled) return false;
 
-    const trimmed = typeof text === 'string' ? text.trim() : '';
-    if (!trimmed) return false;
-
+    setApiError(null);
     setIsPendingGenerationStart(true);
-    sendThreadMessage(trimmed);
-    return true;
+
+    try {
+      await sendThreadMessage(message);
+      return true;
+    } catch (error) {
+      console.error('sendThreadMessage failed', error);
+      setIsPendingGenerationStart(false);
+      setApiError(API_ERROR_MESSAGE);
+      return false;
+    }
+  }, [isInputDisabled, sendThreadMessage]);
+
+  const submitPrompt = useCallback(async (rawPrompt) => {
+    const prompt = rawPrompt.trim();
+    if (!prompt) return false;
+
+    return safeSendThreadMessage(prompt);
+  }, [safeSendThreadMessage]);
+
+  const handleInputChange = (e) => {
+    if (apiError) setApiError(null);
+    setInput(e.target.value);
   };
 
-  const handleSubmit = (e) => {
+  const handleClearChat = useCallback(() => {
+    setApiError(null);
+    setIsPendingGenerationStart(false);
+    startNewThread();
+  }, [startNewThread]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (sendMessage(input)) setInput('');
+    if (await submitPrompt(input)) setInput('');
   };
   const toggleLike = (id) => {
     setLikedMessages(prev => {
@@ -241,7 +282,7 @@ function App() {
               <p className="subtitle">Dynamic Generative UI • React</p>
             </div>
             {hasMessages && (
-              <button className="clear-chat-btn" onClick={startNewThread}>
+              <button className="clear-chat-btn" onClick={handleClearChat}>
                 <span className="icon">🗑️</span>
                 Clear Chat
               </button>
@@ -249,25 +290,30 @@ function App() {
           </div>
         </header>
 
+        {apiError && (
+          <div className="api-error-toast" role="alert">
+            {apiError}
+          </div>
+        )}
+
         <div className={`content-layout ${lastComponentMessage ? 'split-view' : 'centered-view'}`}>
           <div className="conversation-history">
             {!hasMessages && (
               <div className="landing-page">
                 <section className="hero-section-v2">
                   <div className="badge">Tambo AI v1.0</div>
-                  <h2 className="hero-title">Interface at the speed of thought.</h2>
-                  <p className="hero-subtitle">
-                    Our generative engine transforms your natural language into
-                    dynamic, interactive UI components in real-time.
-                  </p>
+                  <h2 className="hero-title">AI-Powered Generative UI</h2>
+                  <p className="hero-subtitle">Type a prompt and AI renders the right interface</p>
 
                   <form className="input-section central" onSubmit={handleSubmit}>
                     <input
                       type="text"
                       className="search-input"
-                      placeholder={showGeneratingStatus ? 'Generating UI...' : 'Type what you want to do...'}
+                      placeholder={showGeneratingStatus
+                        ? 'Generating UI...'
+                        : 'Ask for a learning plan, interview prep, or a project idea...'}
                       value={input}
-                      onChange={(e) => setInput(e.target.value)}
+                      onChange={handleInputChange}
                       disabled={isInputDisabled}
                     />
                     <button type="submit" className="generate-btn" disabled={isInputDisabled}>
@@ -276,6 +322,24 @@ function App() {
                     </button>
                   </form>
                   <GenerationStatus isActive={showGeneratingStatus} />
+
+                  <div className="example-prompts" aria-label="Example prompts">
+                    <div className="example-prompts-label">Example prompts</div>
+                    {EXAMPLE_PROMPTS.map((prompt) => (
+                      <button
+                        key={prompt}
+                        type="button"
+                        className="example-prompt-btn"
+                        onClick={() => {
+                          submitPrompt(prompt);
+                        }}
+                        disabled={isGenerating}
+                        aria-label={`Send example prompt: ${prompt}`}
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
 
                   <ul className="hero-checklist" aria-label="Key benefits">
                     <li className="hero-checklist-item">No credit card required</li>
@@ -302,21 +366,33 @@ function App() {
                 <div className="suggestion-section">
                   <h3 className="section-label">Start with an example</h3>
                   <div className="suggestion-grid-v2">
-                    <button className="suggestion-tile" onClick={() => sendMessage("I'm starting to learn Go")} disabled={isInputDisabled}>
+                    <button
+                      className="suggestion-tile"
+                      onClick={() => submitPrompt("I'm starting to learn Go")}
+                      disabled={isInputDisabled}
+                    >
                       <div className="tile-icon">🎓</div>
                       <div className="tile-text">
                         <strong>Learn a language</strong>
                         <p>Generate a syllabus and track progress</p>
                       </div>
                     </button>
-                    <button className="suggestion-tile" onClick={() => sendMessage("Prepare me for a frontend interview")} disabled={isInputDisabled}>
+                    <button
+                      className="suggestion-tile"
+                      onClick={() => submitPrompt("Prepare me for a frontend interview")}
+                      disabled={isInputDisabled}
+                    >
                       <div className="tile-icon">🚀</div>
                       <div className="tile-text">
                         <strong>Interview Ready</strong>
                         <p>Tips, checklist, and career prep</p>
                       </div>
                     </button>
-                    <button className="suggestion-tile" onClick={() => sendMessage("Give me some React project ideas")} disabled={isInputDisabled}>
+                    <button
+                      className="suggestion-tile"
+                      onClick={() => submitPrompt("Give me some React project ideas")}
+                      disabled={isInputDisabled}
+                    >
                       <div className="tile-icon">🛠️</div>
                       <div className="tile-text">
                         <strong>Project Blueprint</strong>
@@ -392,7 +468,7 @@ function App() {
                       className="search-input"
                       placeholder={showGeneratingStatus ? 'Generating UI...' : 'Ask a follow-up...'}
                       value={input}
-                      onChange={(e) => setInput(e.target.value)}
+                      onChange={handleInputChange}
                       disabled={isInputDisabled}
                     />
                     <button type="submit" className="generate-btn" disabled={isInputDisabled}>
