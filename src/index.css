@@ -601,6 +601,52 @@ h2+p {
   margin: 32px auto 0;
 }
 
+.example-prompts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.example-prompts-label {
+  width: 100%;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.example-prompt-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+  color: var(--text-primary, #f8fafc);
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  font-family: inherit;
+}
+
+.example-prompt-btn:not(:disabled):hover {
+  border-color: var(--primary, #6366f1);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.example-prompt-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.example-prompt-btn:focus-visible {
+  outline: 2px solid var(--primary, #6366f1);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px var(--primary, #6366f1);
+}
+
 .bottom-input-container {
   position: fixed;
   bottom: 0;
