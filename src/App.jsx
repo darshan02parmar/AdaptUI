@@ -150,16 +150,17 @@ function App() {
     .reverse()
     .find(m => m.renderedComponent);
 
-  const submitPrompt = (prompt) => {
-    if (!prompt.trim() || isGenerating) return;
+  const submitPrompt = (rawPrompt) => {
+    const prompt = rawPrompt.trim();
+    if (!prompt || isGenerating) return false;
 
     sendThreadMessage(prompt);
-    setInput('');
+    return true;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    submitPrompt(input);
+    if (submitPrompt(input)) setInput('');
   };
   const toggleLike = (id) => {
     setLikedMessages(prev => {
@@ -241,7 +242,7 @@ function App() {
                     <input
                       type="text"
                       className="search-input"
-                      placeholder="Type what you want to do..."
+                      placeholder="Ask for a learning plan, interview prep, or a project idea..."
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       disabled={isGenerating}
@@ -258,8 +259,11 @@ function App() {
                         key={prompt}
                         type="button"
                         className="example-prompt-btn"
-                        onClick={() => submitPrompt(prompt)}
+                        onClick={() => {
+                          submitPrompt(prompt);
+                        }}
                         disabled={isGenerating}
+                        aria-label={`Send example prompt: ${prompt}`}
                       >
                         {prompt}
                       </button>
