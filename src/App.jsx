@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useTambo, TamboRegistryProvider } from '@tambo-ai/react';
 import LearningMode from './components/LearningMode';
 import InterviewMode from './components/InterviewMode';
@@ -130,10 +130,22 @@ const formatMessage = (text) => {
   );
 };
 
+const API_ERROR_MESSAGE = 'Something went wrong. Please try again.';
+
+const GENERATING_STAGES = new Set([
+  'CHOOSING_COMPONENT',
+  'FETCHING_CONTEXT',
+  'HYDRATING_COMPONENT',
+  'STREAMING_RESPONSE'
+]);
+
 function App() {
   const [input, setInput] = useState('');
   const [likedMessages, setLikedMessages] = useState(new Set());
+  const [apiError, setApiError] = useState(null);
   const { sendThreadMessage, currentThread, generationStage, startNewThread, setThreadMap } = useTambo();
+
+  const isGenerating = GENERATING_STAGES.has(generationStage);
 
   // Get all messages
   const messages = currentThread?.messages || [];
@@ -144,12 +156,32 @@ function App() {
     .reverse()
     .find(m => m.renderedComponent);
 
-  const handleSubmit = (e) => {
+  const safeSendThreadMessage = useCallback(async (message) => {
+    if (GENERATING_STAGES.has(generationStage)) return false;
+
+    setApiError(null);
+
+    try {
+      await sendThreadMessage(message);
+      return true;
+    } catch (error) {
+      console.error('sendThreadMessage failed', error);
+      setApiError(API_ERROR_MESSAGE);
+      return false;
+    }
+  }, [generationStage, sendThreadMessage]);
+
+  const handleInputChange = (e) => {
+    if (apiError) setApiError(null);
+    setInput(e.target.value);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim() || isGenerating) return;
 
-    sendThreadMessage(input);
-    setInput('');
+    const didSend = await safeSendThreadMessage(input);
+    if (didSend) setInput('');
   };
   const toggleLike = (id) => {
     setLikedMessages(prev => {
@@ -198,8 +230,6 @@ function App() {
     });
   };
 
-  const isGenerating = generationStage !== 'IDLE' && generationStage !== 'COMPLETE';
-
   return (
     <TamboRegistryProvider components={components}>
       <div className={`app-container ${hasMessages ? 'chat-active' : 'chat-idle'}`}>
@@ -217,6 +247,12 @@ function App() {
             )}
           </div>
         </header>
+
+        {apiError && (
+          <div className="api-error-toast" role="alert">
+            {apiError}
+          </div>
+        )}
 
         <div className={`content-layout ${lastComponentMessage ? 'split-view' : 'centered-view'}`}>
           <div className="conversation-history">
@@ -236,7 +272,7 @@ function App() {
                       className="search-input"
                       placeholder="Type what you want to do..."
                       value={input}
-                      onChange={(e) => setInput(e.target.value)}
+                      onChange={handleInputChange}
                       disabled={isGenerating}
                     />
                     <button type="submit" className="generate-btn" disabled={isGenerating}>
@@ -269,21 +305,21 @@ function App() {
                 <div className="suggestion-section">
                   <h3 className="section-label">Start with an example</h3>
                   <div className="suggestion-grid-v2">
-                    <button className="suggestion-tile" onClick={() => sendThreadMessage("I'm starting to learn Go")}>
+                    <button className="suggestion-tile" disabled={isGenerating} onClick={() => safeSendThreadMessage("I'm starting to learn Go")}>
                       <div className="tile-icon">🎓</div>
                       <div className="tile-text">
                         <strong>Learn a language</strong>
                         <p>Generate a syllabus and track progress</p>
                       </div>
                     </button>
-                    <button className="suggestion-tile" onClick={() => sendThreadMessage("Prepare me for a frontend interview")}>
+                    <button className="suggestion-tile" disabled={isGenerating} onClick={() => safeSendThreadMessage("Prepare me for a frontend interview")}>
                       <div className="tile-icon">🚀</div>
                       <div className="tile-text">
                         <strong>Interview Ready</strong>
                         <p>Tips, checklist, and career prep</p>
                       </div>
                     </button>
-                    <button className="suggestion-tile" onClick={() => sendThreadMessage("Give me some React project ideas")}>
+                    <button className="suggestion-tile" disabled={isGenerating} onClick={() => safeSendThreadMessage("Give me some React project ideas")}>
                       <div className="tile-icon">🛠️</div>
                       <div className="tile-text">
                         <strong>Project Blueprint</strong>
@@ -359,7 +395,7 @@ function App() {
                       className="search-input"
                       placeholder="Ask a follow-up..."
                       value={input}
-                      onChange={(e) => setInput(e.target.value)}
+                      onChange={handleInputChange}
                       disabled={isGenerating}
                     />
                     <button type="submit" className="generate-btn" disabled={isGenerating}>
