@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTambo, TamboRegistryProvider } from '@tambo-ai/react';
 import LearningMode from './components/LearningMode';
 import InterviewMode from './components/InterviewMode';
@@ -145,13 +145,26 @@ const GENERATING_STAGES = new Set([
   'STREAMING_RESPONSE'
 ]);
 
+function GenerationStatus({ isActive }) {
+  if (!isActive) return null;
+
+  return (
+    <div className="generation-status" role="status" aria-live="polite">
+      Generating UI...
+    </div>
+  );
+}
+
 function App() {
   const [input, setInput] = useState('');
   const [likedMessages, setLikedMessages] = useState(new Set());
+  const [isPendingGenerationStart, setIsPendingGenerationStart] = useState(false);
   const [apiError, setApiError] = useState(null);
   const { sendThreadMessage, currentThread, generationStage, startNewThread, setThreadMap } = useTambo();
 
   const isGenerating = GENERATING_STAGES.has(generationStage);
+  const showGeneratingStatus = isGenerating || isPendingGenerationStart;
+  const isInputDisabled = showGeneratingStatus;
 
   // Get all messages
   const messages = currentThread?.messages || [];
@@ -161,21 +174,32 @@ function App() {
   const lastComponentMessage = [...messages]
     .reverse()
     .find(m => m.renderedComponent);
+  useEffect(() => {
+    if (!isPendingGenerationStart) return;
+
+    const timeoutId = setTimeout(
+      () => setIsPendingGenerationStart(false),
+      generationStage !== 'IDLE' ? 0 : 15000
+    );
+    return () => clearTimeout(timeoutId);
+  }, [generationStage, isPendingGenerationStart]);
 
   const safeSendThreadMessage = useCallback(async (message) => {
-    if (isGenerating) return false;
+    if (isInputDisabled) return false;
 
     setApiError(null);
+    setIsPendingGenerationStart(true);
 
     try {
       await sendThreadMessage(message);
       return true;
     } catch (error) {
       console.error('sendThreadMessage failed', error);
+      setIsPendingGenerationStart(false);
       setApiError(API_ERROR_MESSAGE);
       return false;
     }
-  }, [isGenerating, sendThreadMessage]);
+  }, [isInputDisabled, sendThreadMessage]);
 
   const submitPrompt = useCallback(async (rawPrompt) => {
     const prompt = rawPrompt.trim();
@@ -191,6 +215,7 @@ function App() {
 
   const handleClearChat = useCallback(() => {
     setApiError(null);
+    setIsPendingGenerationStart(false);
     startNewThread();
   }, [startNewThread]);
 
@@ -282,15 +307,19 @@ function App() {
                     <input
                       type="text"
                       className="search-input"
-                      placeholder="Ask for a learning plan, interview prep, or a project idea..."
+                      placeholder={showGeneratingStatus
+                        ? 'Generating UI...'
+                        : 'Ask for a learning plan, interview prep, or a project idea...'}
                       value={input}
                       onChange={handleInputChange}
-                      disabled={isGenerating}
+                      disabled={isInputDisabled}
                     />
-                    <button type="submit" className="generate-btn" disabled={isGenerating}>
-                      {isGenerating ? 'Thinking...' : 'Send'}
+                    <button type="submit" className="generate-btn" disabled={isInputDisabled}>
+                      {showGeneratingStatus && <span className="btn-spinner" aria-hidden="true" />}
+                      {showGeneratingStatus ? 'Generating' : 'Send'}
                     </button>
                   </form>
+                  <GenerationStatus isActive={showGeneratingStatus} />
 
                   <div className="example-prompts" aria-label="Example prompts">
                     <div className="example-prompts-label">Example prompts</div>
@@ -335,21 +364,33 @@ function App() {
                 <div className="suggestion-section">
                   <h3 className="section-label">Start with an example</h3>
                   <div className="suggestion-grid-v2">
-                    <button className="suggestion-tile" disabled={isGenerating} onClick={() => safeSendThreadMessage("I'm starting to learn Go")}>
+                    <button
+                      className="suggestion-tile"
+                      onClick={() => submitPrompt("I'm starting to learn Go")}
+                      disabled={isInputDisabled}
+                    >
                       <div className="tile-icon">🎓</div>
                       <div className="tile-text">
                         <strong>Learn a language</strong>
                         <p>Generate a syllabus and track progress</p>
                       </div>
                     </button>
-                    <button className="suggestion-tile" disabled={isGenerating} onClick={() => safeSendThreadMessage("Prepare me for a frontend interview")}>
+                    <button
+                      className="suggestion-tile"
+                      onClick={() => submitPrompt("Prepare me for a frontend interview")}
+                      disabled={isInputDisabled}
+                    >
                       <div className="tile-icon">🚀</div>
                       <div className="tile-text">
                         <strong>Interview Ready</strong>
                         <p>Tips, checklist, and career prep</p>
                       </div>
                     </button>
-                    <button className="suggestion-tile" disabled={isGenerating} onClick={() => safeSendThreadMessage("Give me some React project ideas")}>
+                    <button
+                      className="suggestion-tile"
+                      onClick={() => submitPrompt("Give me some React project ideas")}
+                      disabled={isInputDisabled}
+                    >
                       <div className="tile-icon">🛠️</div>
                       <div className="tile-text">
                         <strong>Project Blueprint</strong>
@@ -423,15 +464,17 @@ function App() {
                     <input
                       type="text"
                       className="search-input"
-                      placeholder="Ask a follow-up..."
+                      placeholder={showGeneratingStatus ? 'Generating UI...' : 'Ask a follow-up...'}
                       value={input}
                       onChange={handleInputChange}
-                      disabled={isGenerating}
+                      disabled={isInputDisabled}
                     />
-                    <button type="submit" className="generate-btn" disabled={isGenerating}>
-                      {isGenerating ? '...' : 'Send'}
+                    <button type="submit" className="generate-btn" disabled={isInputDisabled}>
+                      {showGeneratingStatus && <span className="btn-spinner" aria-hidden="true" />}
+                      {showGeneratingStatus ? 'Generating' : 'Send'}
                     </button>
                   </form>
+                  <GenerationStatus isActive={showGeneratingStatus} />
                 </div>
               )}
             </div>
