@@ -59,6 +59,12 @@ const components = [
   }
 ];
 
+const EXAMPLE_PROMPTS = [
+  'Help me prepare for interviews',
+  'Suggest a project idea',
+  'Create a learning plan'
+];
+
 // `text` is expected to be a plain string from the model.
 // We intentionally support only `**bold**` and do not interpret HTML.
 const renderBoldText = (text, keyPrefix) => {
@@ -135,12 +141,6 @@ function App() {
   const [likedMessages, setLikedMessages] = useState(new Set());
   const { sendThreadMessage, currentThread, generationStage, startNewThread, setThreadMap } = useTambo();
 
-  const examplePrompts = [
-    'Help me prepare for interviews',
-    'Suggest a project idea',
-    'Create a learning plan'
-  ];
-
   // Get all messages
   const messages = currentThread?.messages || [];
   const hasMessages = messages.length > 0;
@@ -150,12 +150,16 @@ function App() {
     .reverse()
     .find(m => m.renderedComponent);
 
+  const submitPrompt = (prompt) => {
+    if (!prompt.trim() || isGenerating) return;
+
+    sendThreadMessage(prompt);
+    setInput('');
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!input.trim() || isGenerating) return;
-
-    sendThreadMessage(input);
-    setInput('');
+    submitPrompt(input);
   };
   const toggleLike = (id) => {
     setLikedMessages(prev => {
@@ -249,12 +253,12 @@ function App() {
 
                   <div className="example-prompts" aria-label="Example prompts">
                     <div className="example-prompts-label">Example prompts</div>
-                    {examplePrompts.map((prompt) => (
+                    {EXAMPLE_PROMPTS.map((prompt) => (
                       <button
                         key={prompt}
                         type="button"
                         className="example-prompt-btn"
-                        onClick={() => sendThreadMessage(prompt)}
+                        onClick={() => submitPrompt(prompt)}
                         disabled={isGenerating}
                       >
                         {prompt}

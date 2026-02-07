@@ -607,7 +607,7 @@ h2+p {
   font-family: inherit;
 }
 
-.example-prompt-btn:hover {
+.example-prompt-btn:not(:disabled):hover {
   border-color: var(--primary);
   background: rgba(99, 102, 241, 0.1);
 }
