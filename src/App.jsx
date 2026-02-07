@@ -177,12 +177,10 @@ function App() {
   useEffect(() => {
     if (!isPendingGenerationStart) return;
 
-    if (generationStage !== 'IDLE') {
-      setIsPendingGenerationStart(false);
-      return;
-    }
-
-    const timeoutId = setTimeout(() => setIsPendingGenerationStart(false), 15000);
+    const timeoutId = setTimeout(
+      () => setIsPendingGenerationStart(false),
+      generationStage !== 'IDLE' ? 0 : 15000
+    );
     return () => clearTimeout(timeoutId);
   }, [generationStage, isPendingGenerationStart]);
 
