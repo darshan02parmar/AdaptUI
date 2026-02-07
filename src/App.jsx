@@ -135,6 +135,12 @@ function App() {
   const [likedMessages, setLikedMessages] = useState(new Set());
   const { sendThreadMessage, currentThread, generationStage, startNewThread, setThreadMap } = useTambo();
 
+  const examplePrompts = [
+    'Help me prepare for interviews',
+    'Suggest a project idea',
+    'Create a learning plan'
+  ];
+
   // Get all messages
   const messages = currentThread?.messages || [];
   const hasMessages = messages.length > 0;
@@ -224,11 +230,8 @@ function App() {
               <div className="landing-page">
                 <section className="hero-section-v2">
                   <div className="badge">Tambo AI v1.0</div>
-                  <h2 className="hero-title">Interface at the speed of thought.</h2>
-                  <p className="hero-subtitle">
-                    Our generative engine transforms your natural language into
-                    dynamic, interactive UI components in real-time.
-                  </p>
+                  <h2 className="hero-title">AI-Powered Generative UI</h2>
+                  <p className="hero-subtitle">Type a prompt and AI renders the right interface</p>
 
                   <form className="input-section central" onSubmit={handleSubmit}>
                     <input
@@ -243,6 +246,21 @@ function App() {
                       {isGenerating ? 'Thinking...' : 'Send'}
                     </button>
                   </form>
+
+                  <div className="example-prompts" aria-label="Example prompts">
+                    <div className="example-prompts-label">Example prompts</div>
+                    {examplePrompts.map((prompt) => (
+                      <button
+                        key={prompt}
+                        type="button"
+                        className="example-prompt-btn"
+                        onClick={() => sendThreadMessage(prompt)}
+                        disabled={isGenerating}
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
 
                   <ul className="hero-checklist" aria-label="Key benefits">
                     <li className="hero-checklist-item">No credit card required</li>
