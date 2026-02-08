@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTambo, TamboRegistryProvider } from '@tambo-ai/react';
 import LearningMode from './components/LearningMode';
 import InterviewMode from './components/InterviewMode';
@@ -59,10 +59,19 @@ const components = [
   }
 ];
 
-const EXAMPLE_PROMPTS = [
-  'Help me prepare for interviews',
-  'Suggest a project idea',
-  'Create a learning plan'
+const QUICK_START_SUGGESTIONS = [
+  {
+    label: 'Interview Preparation',
+    value: 'Help me prepare for interviews'
+  },
+  {
+    label: 'Learning Roadmap',
+    value: 'Create a learning plan'
+  },
+  {
+    label: 'Project Ideas',
+    value: 'Suggest a project idea'
+  }
 ];
 
 // `text` is expected to be a plain string from the model.
@@ -160,6 +169,8 @@ function App() {
   const [likedMessages, setLikedMessages] = useState(new Set());
   const [isPendingGenerationStart, setIsPendingGenerationStart] = useState(false);
   const [apiError, setApiError] = useState(null);
+  // Ref for the landing page input, used to focus after selecting a suggestion.
+  const landingPageInputRef = useRef(null);
   const { sendThreadMessage, currentThread, generationStage, startNewThread, setThreadMap } = useTambo();
 
   const isGenerating = GENERATING_STAGES.has(generationStage);
@@ -213,9 +224,20 @@ function App() {
     setInput(e.target.value);
   };
 
+  // Suggestion chips intentionally prefill the input and do not auto-send.
+  const handleSuggestionClick = useCallback((value) => {
+    setApiError(null);
+    setInput(value);
+
+    const inputEl = landingPageInputRef.current;
+    if (inputEl) inputEl.focus();
+  }, []);
+
   const handleClearChat = useCallback(() => {
     setApiError(null);
     setIsPendingGenerationStart(false);
+    // Clear both messages and draft input for a full reset.
+    setInput('');
     startNewThread();
   }, [startNewThread]);
 
@@ -280,7 +302,11 @@ function App() {
               <p className="subtitle">Dynamic Generative UI • React</p>
             </div>
             {hasMessages && (
-              <button className="clear-chat-btn" onClick={handleClearChat}>
+              <button
+                className="clear-chat-btn"
+                onClick={handleClearChat}
+                title="Clear all messages and the current draft input"
+              >
                 <span className="icon">🗑️</span>
                 Clear Chat
               </button>
@@ -307,6 +333,7 @@ function App() {
                     <input
                       type="text"
                       className="search-input"
+                      ref={landingPageInputRef}
                       placeholder={showGeneratingStatus
                         ? 'Generating UI...'
                         : 'Ask for a learning plan, interview prep, or a project idea...'}
@@ -321,20 +348,20 @@ function App() {
                   </form>
                   <GenerationStatus isActive={showGeneratingStatus} />
 
-                  <div className="example-prompts" aria-label="Example prompts">
-                    <div className="example-prompts-label">Example prompts</div>
-                    {EXAMPLE_PROMPTS.map((prompt) => (
+                  <div className="example-prompts" aria-label="Quick start suggestions">
+                    <div className="example-prompts-label">Quick start (click to fill, then press Enter/Send)</div>
+                    {/* Quick start suggestions prefill the input; press Enter or click Send to run. */}
+                    {QUICK_START_SUGGESTIONS.map((suggestion) => (
                       <button
-                        key={prompt}
+                        key={suggestion.value}
                         type="button"
                         className="example-prompt-btn"
-                        onClick={() => {
-                          submitPrompt(prompt);
-                        }}
-                        disabled={isGenerating}
-                        aria-label={`Send example prompt: ${prompt}`}
+                        onClick={() => handleSuggestionClick(suggestion.value)}
+                        disabled={isInputDisabled}
+                        aria-label={`Use quick start: ${suggestion.label}`}
+                        title={suggestion.value}
                       >
-                        {prompt}
+                        {suggestion.label}
                       </button>
                     ))}
                   </div>
